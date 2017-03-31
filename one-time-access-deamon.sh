@@ -1,35 +1,21 @@
 #!/bin/dash
 
+# one-time-access deamon
+#
+# This deamon watches $PATH_TO_FILE_DIR for new files, which should be served
+# by a webserver (e.g. lighttpd) under a certain URL. This URL is desired to 
+# be hard to guess.
+# After a file was downloaded once, the deamon will delete the served file by
+# reading the access logs of the webserver i.e. $WEBSERVER_ACCESS_LOGFILE.
+# Links to new files may be found at $LOGFILE. If necessary, this should be 
+# adjusted to provide the link via jabber, email or similar.
+
+
 CONFIGURATION_FILE=/opt/one-time-access/one-time-access.conf
 
 # Include configuration file
-if [ ! -e "$CONFIGURATION_FILE" ]
-then
-	echo "$CONFIGURATION_FILE does not exist."
-	[ ! -w "$(dirname $CONFIGURATION_FILE)" ] \
-		&& echo "Error: Could not create $CONFIGURATION_FILE\
-$USER does not have write permissions to $(dirname $CONFIGURATION_FILE)" \
-		&& exit 1
-	echo "Creating configuration file at $CONFIGURATION_FILE"
-	echo "## Configuration of one-time-access deamon
-# Directories and paths
-PATH_TO_FILE_DIR=\"/opt/one-time-access/file-dir\"
-PATH_TO_FILE_DATABASE=/opt/one-time-access/database
-NAME_OF_FOLDER_SERVING_FILES=one-time-access
-
-# Webserver specific configuration
-PATH_TO_PUBLIC_ROOT_DIR=\"/sites/vhosts/yourdomain.tld/www\"
-ROOT_URL_OF_PUBLIC_DIR=\"https://www.yourdomain.tld/\"
-WEBSERVER_ACCESS_LOGFILE=/var/log/lighttpd/yourdomain.tld.access.log
-
-# General
-MAX_DAYS_UNTIL_DELETION=14
-PATH_TO_PID_FILE=/var/run/one-time-access.pid
-LOGFILE=/var/log/one-time-access.log" > $CONFIGURATION_FILE
-fi
-
-[ ! -f "$CONFIGURATION_FILE" ] \
-	&& echo "Error: $CONFIGURATION_FILE is not a file." \
+[ ! -f "$CONFIGURATION_FILE" ] || [ ! -e "$CONFIGURATION_FILE" ] \
+	&& echo "Error: $CONFIGURATION_FILE does not exist or is not a file." \
 	&& exit 1
 [ ! -r "$CONFIGURATION_FILE" ] \
 	&& echo "Error: $USER does not have read permissions to $CONFIGURATION_FILE" \
@@ -37,15 +23,42 @@ fi
 
 . "$CONFIGURATION_FILE"
 
-for variable in "$PATH_TO_FILE_DIR" "$PATH_TO_PUBLIC_ROOT_DIR" "$NAME_OF_FOLDER_SERVING_FILES" "$MAX_DAYS_UNTIL_DELETION"
+# Check permissions
+for file in "$0" "$CONFIGURATION_FILE"
 do
-	[ -z "$variable" ] \
-		&& echo "Warning: Configuration is incomplete. Some variables are empty."	
+	[ $(stat -c %U "$file") != "root" ] \
+		&& echo "Error: root should be owner of $file. To fix this run the following as root" \
+		&& echo "chown root:root $file" \
+		&& exit 1
 done
+[ $(stat -c %a "$0") -ne 755 ] \
+	&& echo "Error: File permissions of $0 are not 755. \
+Execute the following as root to fix this." \
+	&& echo "chmod 755 $0" \
+	&& exit 1
+[ $(stat -c %a "$CONFIGURATION_FILE") -ne 644 ] \
+	&& echo "Error: File permissions of $CONFIGURATION_FILE are not 644. \
+Execute the following as root to fix this." \
+	&& echo "chmod 644 $CONFIGURATION_FILE" \
+	&& exit 1
+[ "$USER" = "root" ] \
+	&& echo "Warning: For security reasons it might be better to run this deamon as \
+another user than root."
 
-# Check pid file
+## Checking for access log file of the webserver application
+[ -z "$WEBSERVER_ACCESS_LOGFILE" ] || [ ! -f "$WEBSERVER_ACCESS_LOGFILE" ] \
+	&& echo "Error: WEBSERVER_ACCESS_LOGFILE is not set properly or is not a file.
+Configure lighttpd to log accesses. Then define for example 
+/var/log/lighttpd/access.log
+as the desired logging file and define this path at 
+$CONFIGURATION_FILE" \
+	&& exit 1
+
+
+## Processing $PATH_TO_PID_FILE
 [ -z "$PATH_TO_PID_FILE" ] \
 	&& PATH_TO_PID_FILE=/var/run/one-time-access.pid
+# The deamon should only be running once, otherwise it may produce errors.
 if [ -e "$PATH_TO_PID_FILE" ]
 then
 	ps -p $(cat $PATH_TO_PID_FILE) >/dev/null
@@ -58,40 +71,18 @@ echo $$ > $PATH_TO_PID_FILE
 	&& echo "Error: Could not write to pid file." \
 	&& exit 1
 
-# Preprocess max serving time
+
+## Preprocess max serving time
 [ -z "$MAX_DAYS_UNTIL_DELETION" ] || [ $MAX_DAYS_UNTIL_DELETION -le 0 ] \
 	&& MAX_DAYS_UNTIL_DELETION=14 \
-	&& echo "MAX_DAYS_UNTIL_DELETION set to $MAX_DAYS_UNTIL_DELETION"
+	&& echo "MAX_DAYS_UNTIL_DELETION is not set or not set properly." \
+	&& echo "Setting MAX_DAYS_UNTIL_DELETION to $MAX_DAYS_UNTIL_DELETION"
 MAX_SECONDS_UNTIL_DELETION=$(($MAX_DAYS_UNTIL_DELETION*24*60*60))
 
-[ -z "$WEBSERVER_ACCESS_LOGFILE" ] || [ ! -f "$WEBSERVER_ACCESS_LOGFILE" ] \
-	&& echo "Error: WEBSERVER_ACCESS_LOGFILE is not set properly or is not a file.
-Configure lighttpd to log accesses. Then define for example 
-/var/log/lighttpd/access.log
-as the desired logging file and define this path at 
-$CONFIGURATION_FILE" \
-	&& exit 1
-
-# Check for user
-# give commands to create user with specific name
-# check, if the user can write to the necessary folders
 
 ## Preprocessing $PATH_TO_FILE_DIR
-if [ ! -e "$PATH_TO_FILE_DIR" ] || [ ! -d "$PATH_TO_FILE_DIR" ]
-then
-	[ -z "$PATH_TO_FILE_DIR" ] \
-		&& echo "Error: PATH_TO_FILE_DIR is not set or empty." \
-		&& exit 1
-	
-	echo "Creating $PATH_TO_FILE_DIR"
-	mkdir -p "$PATH_TO_FILE_DIR"
-	[ $? -ne 0 ] \
-		&& echo "Error: $PATH_TO_FILE_DIR was not created successfully. " \
-		&& exit 1
-fi
-
-[ ! -r "$PATH_TO_FILE_DIR" ] || [ ! -w "$PATH_TO_FILE_DIR" ] \
-	&& echo "Error: $USER requires write and read permission to $PATH_TO_FILE_DIR" \
+[ -z "$PATH_TO_FILE_DIR" ] \
+	&& echo "Error: PATH_TO_FILE_DIR is not set or empty." \
 	&& exit 1
 
 ## Preprocessing $PATH_TO_PUBLIC_ROOT_DIR
@@ -99,22 +90,34 @@ fi
 	&& echo "Error: PATH_TO_PUBLIC_ROOT_DIR is not set or is empty." \
 	&& exit 1
 
+## Preprocessing $NAME_OF_FOLDER_SERVING_FILES
+# This name will be part of the link to the file and thus visible to others. 
+# If desired, this name can be adjusted.
 [ -z "$NAME_OF_FOLDER_SERVING_FILES" ] \
 	&& NAME_OF_FOLDER_SERVING_FILES=one-time-access \
 	&& echo "NAME_OF_FOLDER_SERVING_FILES set to $NAME_OF_FOLDER_SERVING_FILES"
 
-if [ ! -e "$PATH_TO_PUBLIC_ROOT_DIR/$NAME_OF_FOLDER_SERVING_FILES" ] || [ ! -d "$PATH_TO_PUBLIC_ROOT_DIR/$NAME_OF_FOLDER_SERVING_FILES" ]
-then
-	echo "Creating $PATH_TO_PUBLIC_ROOT_DIR/$NAME_OF_FOLDER_SERVING_FILES"
-	mkdir -p "$PATH_TO_PUBLIC_ROOT_DIR/$NAME_OF_FOLDER_SERVING_FILES"
+## Check, if all necessary objects are correctly installed.
+for file in "$PATH_TO_FILE_DATABASE" "$LOGFILE"
+do
+	touch $file
 	[ $? -ne 0 ] \
-		&& echo "Error: $PATH_TO_PUBLIC_ROOT_DIR/$NAME_OF_FOLDER_SERVING_FILES was not created successfully. " \
+		&& echo "Error: $file was not created successfully" \
 		&& exit 1
-fi
-
-[ ! -r "$PATH_TO_PUBLIC_ROOT_DIR" ] || [ ! -w "$PATH_TO_PUBLIC_ROOT_DIR" ] \
-	&& echo "Error: $USER requires write and read permission to $PATH_TO_PUBLIC_ROOT_DIR" \
-	&& exit 1
+	[ ! -r "$file" ] || [ ! -w "$file" ] \
+		&& echo "Error: $USER requires write and read permission to $file" \
+		&& exit 1
+done	
+for folder in "$PATH_TO_FILE_DIR" "$PATH_TO_PUBLIC_ROOT_DIR/$NAME_OF_FOLDER_SERVING_FILES"
+do
+	mkdir -p "$folder"
+	[ $? -ne 0 ] \
+		&& echo "Error: $folder was not created successfully." \
+		&& exit 1
+	[ ! -r "$folder" ] || [ ! -w "$folder" ] \
+		&& echo "Error: $USER requires write and read permission to $folder" \
+		&& exit 1
+done
 
 
 
@@ -166,17 +169,17 @@ AddNewFile()
 		return 1
 	fi
 	
-	# replace some special characters with underscore i.e. _
+	# Replace some special characters with underscore i.e. _
 	newBasename="$(basename "$1" | sed -e 's/[\\\(\)\{\}\&:%\$§\*<>~?!^°+\`\´=;#|,"]/_/g')"
-	# do some individual replacements
+	# Do some individual replacements
 	newBasename="$(echo "$newBasename" | sed -e 's/@/_at_/g')"
 	# NTFS does not allow \ / : * ? " < > |
-	# Unix allows some more
+	# Unix filesystems allow some more
 	
-	# remove all unwelcome symbols from the new file name
+	# Remove all unwelcome symbols from the new file name
 	newBasename=$(echo "$newBasename" | sed -e 's/[[^0-9a-zA-Z\.\_]|[^-]]*//g')
 	
-	# replace capital letters with lowercase
+	# Replace capital letters with lowercase
 	newBasename=$(echo "$newBasename" | awk '{print tolower($0)}')
 	
 	if [ "$PATH_TO_FILE_DIR/$newBasename" != "$1" ]
@@ -185,21 +188,46 @@ AddNewFile()
 			&& echo "Error: $PATH_TO_FILE_DIR/$newBasename already exists." \
 			&& return 1
 		
-		# move and rename the file
+		# (Move and) rename the file
 		mv "$1" "$PATH_TO_FILE_DIR/$newBasename"
 	fi
 	
-	# Generate a unique name for the file
-	folderName=$(sha512sum "$PATH_TO_FILE_DIR/$newBasename" | awk -F ' ' '{print $1}')$(date +%s)
+	folderName=""
+	while [ -z "$folderName" ]
+	do
+		# Generate a unique name for the file. sha512 does this as fast as md5sum. 
+		# To be able to serve the files with idenitcal names twice, the seconds since 1970 are used
+		# to provide a unique, hard-to-guess folder name
+		folderName=$(sha512sum "$PATH_TO_FILE_DIR/$newBasename" | awk -F ' ' '{print $1}')$(date +%s)
+		
+		# If two files with the same file name should be served at the same time $folderName
+		# differs only in the last characters/digits. In this case it is better to have a whole
+		# new checksum, to do the next step of shortening afterwards.
+		folderName=$(echo $folderName | sha512sum | awk -F ' ' '{print $1}')
+		
+		# The folder name is now 129 symbols long. To prevent that somebody guesses this string, this 
+		# length is not necessary. So it should be shortened for practical reasons. Still after
+		# shortening it would be not probable that this folder already exists. Still if it exists, it 
+		# should not be probable that a file with the same name/basename already exists.
+		folderName=$(echo $folderName | sed -e 's/^.\{48\}\|.\{49\}$//g')
+		# Now folderName has a length of 32.
+		
+		# But since in the whole process the folder (not the file) will be selected for deletetion, 
+		# the folder name should be a unique identifier. So here we go with checking and testing for 
+		# uniqueness. 
+		[ $(grep -c $folderName $PATH_TO_FILE_DATABASE) -ne 0 ] \
+			&& folderName=""
+		
+		for logfile in $WEBSERVER_ACCESS_LOGFILE*
+		do
+			[ $(grep -c $folderName $logfile) -ne 0 ] \
+				&& folderName=""
+		done
+		
+		# The elapsed time will be different for each circle of the while loop and so does $folderName.
+	done
 	
-	# shorten the unique folderName by using the md5sum of the folderName
-	folderName=$(echo $folderName | md5sum | awk -F ' ' '{print $1}')
-	
-	# shorten the unique name by removing the first and the last 4 symbols
-	folderName=$(echo $folderName | sed -e 's/^.\{4\}\|.\{4\}$//g')
-	
-	# Note that sha512 seems to be faster than md5sum for example
-	# Files could collide, but that does not matter so much
+	# Now the path is complete
 	newPath="$PATH_TO_PUBLIC_ROOT_DIR/$NAME_OF_FOLDER_SERVING_FILES/$folderName/$newBasename"
 	
 	# Move the file to the serving dir
@@ -213,8 +241,9 @@ AddNewFile()
 	# Add the new file with date to the database
 	echo "$newPath $folderName $(date +%s)" >> $PATH_TO_FILE_DATABASE
 	
-	# Log the added file
-	echo "[$(date +%F\ %R)] Added file for download: $newPath\n $ROOT_URL_OF_PUBLIC_DIR$NAME_OF_FOLDER_SERVING_FILES/$folderName/$newBasename" >> $LOGFILE
+	# Log the added file and provide a URL to the file
+	echo "[$(date +%F\ %R)] Added file for download: $newPath
+$ROOT_URL_OF_PUBLIC_DIR$NAME_OF_FOLDER_SERVING_FILES/$folderName/$newBasename" >> $LOGFILE
 	return $?
 }
 
@@ -223,17 +252,6 @@ AddNewFile()
 # start loop
 #
 
-touch $PATH_TO_FILE_DATABASE
-[ $? -ne 0 ] \
-	&& echo "Error: $PATH_TO_FILE_DATABASE was not created successfully" \
-	&& exit 1
-	
-for path in $PATH_TO_FILE_DIR $PATH_TO_FILE_DATABASE
-do
-	[ ! -e $path ] \
-		&& echo "Error: $path does not exist." \
-		&& return 1
-done
 
 lastChangeOfLogFile=$(stat -c %Y $WEBSERVER_ACCESS_LOGFILE)
 lastRunOfAddNewFile=0
@@ -241,17 +259,20 @@ lastRunOfAddNewFile=0
 while true
 do
 	# process new files
+	# check, if the folder $PATH_TO_FILE_DIR was changed -- for example by adding a new file to it.
 	if [ $(stat -c %Y $PATH_TO_FILE_DIR ) -ge $lastRunOfAddNewFile ]
 	then
+		# save current time in seconds
 		lastRunOfAddNewFile=$(date +%s)
+		# serve all new files from $PATH_TO_FILE_DIR under a hard-to-guess link
 		echo "$(EchoNewFiles)" | while read newFile
 		do
 			AddNewFile "$newFile"
 		done
 	fi
 	
-	# check for access
-	for second in $(seq 1 6)
+	# check for access each 5 seconds and add new files after 30 seconds
+	for cycle in $(seq 1 6)
 	do
 		# Check the access log file of the webserver for changes/accesses
 		if [ $(stat -c %Y $WEBSERVER_ACCESS_LOGFILE ) -eq $lastChangeOfLogFile ]
@@ -263,19 +284,22 @@ do
 		# The log file was changed at the meantime, so save the moment when this was checked
 		lastChangeOfLogFile=$(stat -c %Y $WEBSERVER_ACCESS_LOGFILE)
 		
-		# Delete all accessed files, based on database entries
+		# Delete all accessed files, based on database entries. 
+		# If there are no files listed, the deamon does not have to do anything
 		cat $PATH_TO_FILE_DATABASE | while read fileEntry
 		do
 			pathToThisFile=$(echo "$fileEntry" | awk -F ' ' '{print $1}')
 			for logFile in $WEBSERVER_ACCESS_LOGFILE*
 			do
-				numberOfAccesses=$(grep -c "$(echo $fileEntry | awk -F ' ' '{print $2}')" $logFile)
+				numberOfAccesses=$(grep -c "$(echo $fileEntry \
+					| awk -F ' ' '{print $2}')" $logFile)
 				
-				# Detect multiple downloads/accesses
+				# Detect and log multiple downloads/accesses
 				if [ $numberOfAccesses -gt 1 ]
 				then
 					# log the deletion
-					echo "[$(date +%F\ %R)] $pathToThisFile was downloaded multiple times. Check your webserver's log files!" >> $LOGFILE
+					echo "[$(date +%F\ %R)] $pathToThisFile was downloaded multiple\
+ times. Check your webserver's log files!" >> $LOGFILE
 				fi
 				
 				# Delete accessed files
@@ -286,9 +310,11 @@ do
 			done
 			
 			# Delete old files
-			if [ $(date +%s) -gt $(($(echo $fileEntry | awk -F ' ' '{print $3}') + $MAX_SECONDS_UNTIL_DELETION)) ]
+			if [ $(date +%s) -gt $(($(echo $fileEntry \
+				| awk -F ' ' '{print $3}') + $MAX_SECONDS_UNTIL_DELETION)) ]
 			then
-				echo "[$(date +%F\ %R)] Initiating deletion of file, since it is older than $MAX_SECONDS_UNTIL_DELETION seconds." >> $LOGFILE
+				echo "[$(date +%F\ %R)] Initiating deletion of file, since it is older \
+than $MAX_SECONDS_UNTIL_DELETION seconds." >> $LOGFILE
 				DeleteFile $pathToThisFile
 			fi
 		done
