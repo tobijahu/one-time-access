@@ -13,15 +13,10 @@
 
 CONFIGURATION_FILE=/opt/one-time-access/one-time-access.conf
 
-# Include configuration file
+# Check, if $CONFIGURATION_FILE exists. 
 [ ! -f "$CONFIGURATION_FILE" ] || [ ! -e "$CONFIGURATION_FILE" ] \
 	&& echo "Error: $CONFIGURATION_FILE does not exist or is not a file." \
 	&& exit 1
-[ ! -r "$CONFIGURATION_FILE" ] \
-	&& echo "Error: $USER does not have read permissions to $CONFIGURATION_FILE" \
-	&& exit 1
-
-. "$CONFIGURATION_FILE"
 
 # Check permissions
 for file in "$0" "$CONFIGURATION_FILE"
@@ -44,6 +39,11 @@ Execute the following as root to fix this." \
 [ "$USER" = "root" ] \
 	&& echo "Warning: For security reasons it might be better to run this deamon as \
 another user than root."
+
+# After all security checks are done, th configuration file can safely be
+# included.
+. "$CONFIGURATION_FILE"
+
 
 ## Checking for access log file of the webserver application
 [ -z "$WEBSERVER_ACCESS_LOGFILE" ] || [ ! -f "$WEBSERVER_ACCESS_LOGFILE" ] \
