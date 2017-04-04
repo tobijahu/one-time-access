@@ -5,6 +5,6 @@ By using the ota-ssh-client.sh script, it is possible to upload a file to the se
 
 Otherwise files may be transfered for example via ssh/scp, sftp, samba or similar. An interface to send the link via email or jabber could be a great idea, but is not implemented yet.
 
-A solution to provide links to the uploader is not yet implemented. At the moment weblinks can be found at the log files.
+At the moment weblinks can be found at the log files. Which may be enhanced soon.
 
 :shell: :dash: :filehosting: :privacy: :internet: :webserver: :lighttpd:
