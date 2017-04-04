@@ -1,5 +1,5 @@
 # one-time-access
-A :deamon:, a short script written in dash/shell, that scans a specific folder for files to be then moved to a unique path to let lighttpd serve the file under an unique address. 
+A :deamon:, a short script written in dash/shell, that scans a specific folder for files to be then moved to a unique path to let lighttpd serve the file under an unique hard-to-guess url. 
 
 By using the ota-ssh-client.sh script, it is possible to upload a file to the server and obtain a link to the file. Its deletion after the first access will then be handled by the one-time-access-deamon on the server. This script requires a working ssh setup (including ssh-agent) from the client to the server.
 
