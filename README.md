@@ -13,59 +13,41 @@ First install the deamon script on your server. Then install the client script o
 ### Deamon
 Clone the repository to your current directory using git.
 
-```git clone https://github.com/tobijahu/one-time-access.git one-time-access```
+```$ git clone https://github.com/tobijahu/one-time-access.git one-time-access```
 
-Copy the content to /opt/one-time-access as root.
+Copy the content to `/opt/one-time-access`, create a new user `ota-deamon` to run the deamon scrit, add it to the group of your webserver user (e.g. `www-data`) and create all necessary files and folders. Run the following commands as root user.
 
-```su root -c 'cp -a one-time-access /opt/'```
+```cp -a one-time-access /opt/```
 
-Or in case of using sudo.
+```chmod 755 /opt/one-time-access/one-time-access-deamon.sh```
 
-```sudo cp -a one-time-access /opt/```
+```useradd ota-deamon```
 
-Make the script executable.
+```usermod -a -G www-data ota-deamon```
 
-```su root -c 'chmod 755 /opt/one-time-access/one-time-access-deamon.sh'```
+```mkdir /opt/one-time-access/file-dir```
 
-Or
+```chown ota-deamon:ota-deamon /opt/one-time-access/file-dir```
 
-```sudo chmod 755 /opt/one-time-access/one-time-access-deamon.sh```
+```touch /opt/one-time-access/database /var/run/one-time-access.pid /var/log/one-time-access.log```
 
-Now create a new user ota to run the deamon.
-
-```su root -c 'useradd ota'```
-
-Or
-
-```sudo useradd ota```
-
-Create a new directory that serves files. `ota` requires to write to this directory. So make `ota` own it.
-
-```su root -c 'mkdir /opt/one-time-access/file-dir && chown ota /opt/one-time-access/file-dir'```
-
-Or the sudo way:
-
-```sudo mkdir /opt/one-time-access/file-dir && sudo chown ota /opt/one-time-access/file-dir```
-
-Create a database file that is owned by ota.
-
-```su root -c 'touch /opt/one-time-access/database && chown ota /opt/one-time-access/database'```
-
-Or
-
-```sudo touch /opt/one-time-access/database && sudo chown ota /opt/one-time-access/database'```
+```chown ota-deamon:ota-deamon /opt/one-time-access/database /var/run/one-time-access.pid /var/log/one-time-access.log```
 
 Adjust the configuration file using your preferred editor e.g. vim.
 
-```vim /opt/one-time-access/one-time-access.conf```
+```$ vim /opt/one-time-access/one-time-access.conf```
 
-Finnaly autostart the script. In case of using init.d add the following line to `/etc/rc.local`.
+To allow the script to write to a folder served by your webserver, make sure it has sufficient permissions. In case  in your configuration NAME_OF_FOLDER_SERVING_FILES is defined as `one-time-access` and PATH_TO_PUBLIC_ROOT_DIR is defined as `/var/www/html`, run the following as root.
 
-```su ota -c '/opt/one-time-access-deamon.sh &'```
+```chmod 775 /var/www/html/one-time-access```
 
-Now on every system start the deamon is started. To start it right now run
+Finally setup autostart of the script. In case of using init.d add the following line to `/etc/rc.local`.
 
-```su ota -c '/opt/one-time-access-deamon.sh &```
+```su ota-deamon -c '/opt/one-time-access-deamon.sh &'```
+
+Now on every system start the deamon is started. To see if the script is running properly, start it from the terminal by executing
+
+```$ su ota-deamon -c '/opt/one-time-access-deamon.sh &```
 
 ### Client
 To upload files to be served by the deamon you may want to install the upload script, too.
