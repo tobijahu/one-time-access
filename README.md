@@ -20,15 +20,11 @@ Copy the content to `/opt/one-time-access`, create a new user `ota-deamon` to ru
 ```cp -a one-time-access /opt/
 chmod 755 /opt/one-time-access/one-time-access-deamon.sh
 useradd ota-deamon
-usermod -a -G www-data ota-deamon```
-
-```mkdir /opt/one-time-access/file-dir```
-
-```chown ota-deamon:ota-deamon /opt/one-time-access/file-dir```
-
-```touch /opt/one-time-access/database /var/run/one-time-access.pid /var/log/one-time-access.log```
-
-```chown ota-deamon:ota-deamon /opt/one-time-access/database /var/run/one-time-access.pid /var/log/one-time-access.log```
+usermod -a -G www-data ota-deamon
+mkdir /opt/one-time-access/file-dir
+chown ota-deamon:ota-deamon /opt/one-time-access/file-dir
+touch /opt/one-time-access/database /var/run/one-time-access.pid /var/log/one-time-access.log
+chown ota-deamon:ota-deamon /opt/one-time-access/database /var/run/one-time-access.pid /var/log/one-time-access.log```
 
 Adjust the configuration file using your preferred editor e.g. vim.
 
