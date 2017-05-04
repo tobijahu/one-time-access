@@ -22,7 +22,7 @@ Clone the repository to your current directory using git.
 
 Execute the following commands as root user. This will copy the content of the cloned repository to `/opt/one-time-access`, create a new user `ota-deamon` to run the deamon script, add ota-deamon to the group of your webserver user (e.g. `www-data`) and create all necessary files and folders. 
 
-```
+```dash
 cp -a one-time-access /opt/
 chmod 755 /opt/one-time-access/one-time-access-deamon.sh
 useradd ota-deamon
