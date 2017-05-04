@@ -1,9 +1,14 @@
 # one-time-access
-A :deamon:, a short script written in dash/shell, that monitors a specific folder for files to be then moved to a unique path to let lighttpd serve the file under an unique hard-to-guess url. 
+In connection with a webserver (lighttpd), this deamon serves files under an unique hard-to-guess url until first access. 
 
-By using the ota-ssh-client.sh script, it is possible to upload a file to the server and obtain a link to the file. Its deletion after the first access will then be handled by the one-time-access-deamon on the server. This script requires a working ssh setup (including ssh-agent) from the client to the server.
+The general usecase is a single user who wants to assure, that a file was only downloaded once .
 
-Otherwise files may be transfered for example via ssh/scp, sftp, samba or similar. An interface to send the link via email or jabber could be a great idea, but is not implemented yet.
+## How it works
+The :deamon:, written in dash/shell, monitors a specific folder for files to be then moved to a unique path to let lighttpd serve the file under a unique url. The deamon monitors the access file of the webserver to detected, if a file was accessed. If so, it will be deleted. If the file was not accessed for 14 days, it will be deleted anyway.
+
+To serve files using this script/deamon from a remote machine, put files into the monitored folder via the one-time-access-client script (introduced below) finally this will return the link to the file automatically to the user. This script requires a working ssh setup (including ssh-agent) from the client to the server.
+
+Otherwise files may be transfered for example via ssh/scp, sftp, samba or similar. An interface for this usecase to send the link via email or jabber could be a great idea, but is not yet implemented.
 
 At the moment weblinks can be found at the log files. Which may be enhanced soon. So currently the usecase is dedicated to a single user or the administrator only.
 
