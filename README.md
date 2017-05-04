@@ -17,13 +17,10 @@ Clone the repository to your current directory using git.
 
 Copy the content to `/opt/one-time-access`, create a new user `ota-deamon` to run the deamon scrit, add it to the group of your webserver user (e.g. `www-data`) and create all necessary files and folders. Run the following commands as root user.
 
-```cp -a one-time-access /opt/```
-
-```chmod 755 /opt/one-time-access/one-time-access-deamon.sh```
-
-```useradd ota-deamon```
-
-```usermod -a -G www-data ota-deamon```
+```cp -a one-time-access /opt/
+chmod 755 /opt/one-time-access/one-time-access-deamon.sh
+useradd ota-deamon
+usermod -a -G www-data ota-deamon```
 
 ```mkdir /opt/one-time-access/file-dir```
 
