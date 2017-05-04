@@ -33,7 +33,7 @@ touch /opt/one-time-access/database /var/run/one-time-access.pid /var/log/one-ti
 chown ota-deamon:ota-deamon /opt/one-time-access/database /var/run/one-time-access.pid /var/log/one-time-access.log
 ```
 
-Adjust the configuration file using your preferred editor (in this instruction vim is used).
+Adjust the configuration file using your preferred editor (in this instruction _vim_ is used).
 
 ```$ vim /opt/one-time-access/one-time-access.conf```
 
@@ -48,11 +48,11 @@ To see if the script is running properly, start it from the terminal by executin
 If no errors show up, stop execution by typing ```Strg + C``` to return to your command line.
 
 #### Autostart
-Finally setup autostart of the script. In case of using init.d add the following line to `/etc/rc.local`.
+Finally setup autostart of the script. In case of using _init.d_ add the following line to `/etc/rc.local`.
 
 ```su ota-deamon -c '/opt/one-time-access-deamon.sh &'```
 
-In case of using cron, edit the crontab of ota-deamon by executing 
+In case of using _cron_, edit the crontab of _ota-deamon_ by executing 
 
 ```$ su ota-deamon -c 'crontab -e'```
 
