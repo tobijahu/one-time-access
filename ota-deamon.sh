@@ -89,6 +89,7 @@ MAX_SECONDS_UNTIL_DELETION=$(($MAX_DAYS_UNTIL_DELETION*24*60*60))
 [ -z "$PATH_TO_PUBLIC_ROOT_DIR" ] \
 	&& echo "Error: PATH_TO_PUBLIC_ROOT_DIR is not set or is empty." \
 	&& exit 1
+PATH_TO_PUBLIC_ROOT_DIR=$(dirname "$PATH_TO_PUBLIC_ROOT_DIR")
 
 ## Preprocessing $NAME_OF_FOLDER_SERVING_FILES
 # This name will be part of the link to the file and thus visible to others. 
@@ -96,19 +97,24 @@ MAX_SECONDS_UNTIL_DELETION=$(($MAX_DAYS_UNTIL_DELETION*24*60*60))
 [ -z "$NAME_OF_FOLDER_SERVING_FILES" ] \
 	&& NAME_OF_FOLDER_SERVING_FILES=one-time-access \
 	&& echo "NAME_OF_FOLDER_SERVING_FILES set to $NAME_OF_FOLDER_SERVING_FILES"
+NAME_OF_FOLDER_SERVING_FILES=$(basename "$NAME_OF_FOLDER_SERVING_FILES")
 
 ## Check, if all necessary objects are correctly installed.
 for file in "$PATH_TO_FILE_DATABASE" "$LOGFILE"
 do
-	touch $file
-	[ $? -ne 0 ] \
-		&& echo "Error: $file was not created successfully" \
-		&& exit 1
+	if [ ! -e $file ]
+	then
+		touch $file
+		[ $? -ne 0 ] \
+			&& echo "Error: $file was not created successfully" \
+			&& exit 1
+	fi
+	
 	[ ! -r "$file" ] || [ ! -w "$file" ] \
 		&& echo "Error: $USER requires write and read permission to $file" \
 		&& exit 1
 done	
-for folder in "$PATH_TO_FILE_DIR" "$PATH_TO_PUBLIC_ROOT_DIR/$NAME_OF_FOLDER_SERVING_FILES"
+for folder in "$PATH_TO_FILE_DIR" "$(dirname $PATH_TO_PUBLIC_ROOT_DIR)/$(basename $NAME_OF_FOLDER_SERVING_FILES)"
 do
 	mkdir -p "$folder"
 	[ $? -ne 0 ] \
