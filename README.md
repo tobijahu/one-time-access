@@ -70,16 +70,16 @@ Finally setup autostart of the script. In case of using _init.d_ add the followi
 su ota-deamon -c '/opt/one-time-access/ota-deamon.sh &'
 ```
 
-In case of using _cron_, edit the crontab of user _ota-deamon_ by executing 
+In case of using _cron_, edit the crontab of user _root_ (or optionally _ota-deamon_) by executing 
 
 ```dash
-$ su ota-deamon -c 'crontab -e'
+$ crontab -e
 ```
 
 and add the following line.
 
 ```dash
-@reboot /opt/one-time-access/ota-deamon.sh &
+@reboot su ota-deamon -c '/opt/one-time-access/ota-deamon.sh &'
 ```
 
 Now on every system start the deamon is started. 
