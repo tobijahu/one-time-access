@@ -15,7 +15,7 @@ Clone the repository to your current directory using git.
 
 ```$ git clone https://github.com/tobijahu/one-time-access.git one-time-access```
 
-Copy the content to `/opt/one-time-access`, create a new user `ota-deamon` to run the deamon scrit, add it to the group of your webserver user (e.g. `www-data`) and create all necessary files and folders. Run the following commands as root user.
+Execute the following commands as root user. This will copy the content of the cloned repository to `/opt/one-time-access`, create a new user `ota-deamon` to run the deamon script, add ota-deamon to the group of your webserver user (e.g. `www-data`) and create all necessary files and folders. 
 
 ```
 cp -a one-time-access /opt/
