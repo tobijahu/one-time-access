@@ -84,6 +84,19 @@ and add the following line.
 
 Now on every system start the deamon is started. 
 
+#### Logrotate
+By and by the log file will grow and thus waste space on your hard drive. To compress log files you may use _logrotate_. The following command will configure logrotate to split and compress log files of the ota-deamon.sh.
+
+```dash
+echo '/var/log/one-time-access/deamon.log {
+  rotate 12
+  monthly
+  compress
+  missingok
+  notifempty
+}' > /etc/logrotate.d/one-time-access
+```
+
 ### Install the client script for ssh
 To upload files to be served by the deamon you may want to install the upload script, too.
 TODO
