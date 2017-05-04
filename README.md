@@ -5,8 +5,8 @@ The general usecase is a single user who wants to assure, that a file was only d
 
 ## Requirements
 * Working (and secure) webserver installation (lighttpd) that logs accesses.
-* root-access to the system
-* Working ssh installation (only client script)
+* root-access to the system (installation only)
+* Working ssh installation (client script only)
 
 ## How it works
 The deamon, written in dash/shell, monitors a specific folder for files to be then moved to a unique path to let lighttpd serve the file under a unique url. The deamon monitors the access file of the webserver to detected, if a file was accessed. If so, it will be deleted. If the file was not accessed for 14 days, it will be deleted anyway.
