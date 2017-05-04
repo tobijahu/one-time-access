@@ -32,13 +32,21 @@ Adjust the configuration file using your preferred editor e.g. vim.
 
 ```$ vim /opt/one-time-access/one-time-access.conf```
 
-To allow the script to write to a folder served by your webserver, make sure it has sufficient permissions. In case  in your configuration NAME_OF_FOLDER_SERVING_FILES is defined as `one-time-access` and PATH_TO_PUBLIC_ROOT_DIR is defined as `/var/www/html`, run the following as root.
+To give the script write permissions to a folder served by your webserver, make sure it has sufficient permissions. In case at your configuration the variable NAME_OF_FOLDER_SERVING_FILES is defined as `one-time-access` and PATH_TO_PUBLIC_ROOT_DIR is defined as `/var/www/html`, execute the following as root.
 
 ```chmod 775 /var/www/html/one-time-access```
 
 Finally setup autostart of the script. In case of using init.d add the following line to `/etc/rc.local`.
 
 ```su ota-deamon -c '/opt/one-time-access-deamon.sh &'```
+
+In case of using cron, edit the crontab of ota-deamon by executing 
+
+```$ su ota-deamon -c 'crontab -e'```
+
+and add the following line.
+
+```@reboot /opt/one-time-access-deamon.sh &```
 
 Now on every system start the deamon is started. To see if the script is running properly, start it from the terminal by executing
 
