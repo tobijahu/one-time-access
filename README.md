@@ -1,16 +1,16 @@
 # one-time-access
-A :deamon:, a short script written in dash/shell, that scans a specific folder for files to be then moved to a unique path to let lighttpd serve the file under an unique hard-to-guess url. 
+A :deamon:, a short script written in dash/shell, that monitors a specific folder for files to be then moved to a unique path to let lighttpd serve the file under an unique hard-to-guess url. 
 
 By using the ota-ssh-client.sh script, it is possible to upload a file to the server and obtain a link to the file. Its deletion after the first access will then be handled by the one-time-access-deamon on the server. This script requires a working ssh setup (including ssh-agent) from the client to the server.
 
 Otherwise files may be transfered for example via ssh/scp, sftp, samba or similar. An interface to send the link via email or jabber could be a great idea, but is not implemented yet.
 
-At the moment weblinks can be found at the log files. Which may be enhanced soon.
+At the moment weblinks can be found at the log files. Which may be enhanced soon. So currently the usecase is dedicated to a single user or the administrator only.
 
 ## Installation
 First install the deamon script on your server. Then install the client script on your machine.
 
-### Deamon
+### Install the deamon
 Clone the repository to your current directory using git.
 
 ```$ git clone https://github.com/tobijahu/one-time-access.git one-time-access```
@@ -36,6 +36,13 @@ To give the script write permissions to a folder served by your webserver, make 
 
 ```chmod 775 /var/www/html/one-time-access```
 
+To see if the script is running properly, start it from the terminal by executing
+
+```$ su ota-deamon -c '/opt/one-time-access-deamon.sh```
+
+If no errors show up, stop execution by typing ```Strg + C``` to return to your command line.
+
+#### Autostart
 Finally setup autostart of the script. In case of using init.d add the following line to `/etc/rc.local`.
 
 ```su ota-deamon -c '/opt/one-time-access-deamon.sh &'```
@@ -48,11 +55,9 @@ and add the following line.
 
 ```@reboot /opt/one-time-access-deamon.sh &```
 
-Now on every system start the deamon is started. To see if the script is running properly, start it from the terminal by executing
+Now on every system start the deamon is started. 
 
-```$ su ota-deamon -c '/opt/one-time-access-deamon.sh &```
-
-### Client
+### Install the client script for ssh
 To upload files to be served by the deamon you may want to install the upload script, too.
 TODO
 
