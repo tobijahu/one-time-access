@@ -11,7 +11,7 @@
 # adjusted to provide the link via jabber, email or similar.
 
 
-CONFIGURATION_FILE=/opt/one-time-access/one-time-access.conf
+CONFIGURATION_FILE=/opt/one-time-access/ota-deamon.conf
 
 # Check, if $CONFIGURATION_FILE exists. 
 [ ! -f "$CONFIGURATION_FILE" ] || [ ! -e "$CONFIGURATION_FILE" ] \
