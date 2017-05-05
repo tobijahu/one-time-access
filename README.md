@@ -67,7 +67,7 @@ Finally setup the script to start up on system start.
 In case of using _init.d_ add the following line to `/etc/rc.local`.
 
 ```
-su ota-deamon -c '/opt/one-time-access/ota-deamon.sh &'
+mkdir -p /var/run/one-time-access && chown ota-deamon:ota-deamon /var/run/one-time-access && su ota-deamon -c '/opt/one-time-access/ota-deamon.sh &'
 ```
 
 ##### cron
@@ -77,7 +77,7 @@ $ crontab -e
 ```
 and add the following line.
 ```
-@reboot su ota-deamon -c '/opt/one-time-access/ota-deamon.sh &'
+@reboot mkdir -p /var/run/one-time-access && chown ota-deamon:ota-deamon /var/run/one-time-access && su ota-deamon -c '/opt/one-time-access/ota-deamon.sh &'
 ```
 
 ##### systemd
