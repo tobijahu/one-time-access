@@ -10,7 +10,6 @@
 # Links to new files may be found at $LOGFILE. If necessary, this should be 
 # adjusted to provide the link via jabber, email or similar.
 
-
 CONFIGURATION_FILE=/opt/one-time-access/ota-deamon.conf
 
 # Check, if $CONFIGURATION_FILE exists. 
@@ -56,20 +55,27 @@ $CONFIGURATION_FILE" \
 
 
 ## Processing $PATH_TO_PID_FILE
-[ -z "$PATH_TO_PID_FILE" ] \
-	&& PATH_TO_PID_FILE=/var/run/one-time-access.pid
-# The deamon should only be running once, otherwise it may produce errors.
-if [ -e "$PATH_TO_PID_FILE" ]
+if [ "$1" != "systemd" ]
 then
-	ps -p $(cat $PATH_TO_PID_FILE) >/dev/null
-	[ $? -eq 0 ] \
-		&& echo "Error: Another instance of $0 is already running." \
+	[ ! -d "$(dirname $PATH_TO_PID_FILE)" ] \
+		&& echo "Error: $(dirname $PATH_TO_PID_FILE) does not exist or is not a directory." \
+		&& exit 1
+	[ ! -w "$(dirname $PATH_TO_PID_FILE)" ] \
+		&& echo "Error: $(dirname $PATH_TO_PID_FILE) is not writeable by $USER." \
+		&& exit 1
+	# The deamon should only be running once, otherwise it may produce errors.
+	if [ -e "$PATH_TO_PID_FILE" ]
+	then
+		ps -p $(cat $PATH_TO_PID_FILE) >/dev/null
+		[ $? -eq 0 ] \
+			&& echo "Error: Another instance of $0 is already running." \
+			&& exit 1
+	fi
+	echo $$ > $PATH_TO_PID_FILE
+	[ $? -ne 0 ] \
+		&& echo "Error: Could not write to pid file $PATH_TO_PID_FILE." \
 		&& exit 1
 fi
-echo $$ > $PATH_TO_PID_FILE
-[ $? -ne 0 ] \
-	&& echo "Error: Could not write to pid file." \
-	&& exit 1
 
 
 ## Preprocess max serving time
@@ -89,15 +95,19 @@ MAX_SECONDS_UNTIL_DELETION=$(($MAX_DAYS_UNTIL_DELETION*24*60*60))
 [ -z "$PATH_TO_PUBLIC_ROOT_DIR" ] \
 	&& echo "Error: PATH_TO_PUBLIC_ROOT_DIR is not set or is empty." \
 	&& exit 1
-PATH_TO_PUBLIC_ROOT_DIR=$(dirname "$PATH_TO_PUBLIC_ROOT_DIR")
+[ ! -d "$PATH_TO_PUBLIC_ROOT_DIR" ] \
+	&& echo "Error: PATH_TO_PUBLIC_ROOT_DIR does not exist: $PATH_TO_PUBLIC_ROOT_DIR" \
+	&& exit 1
 
 ## Preprocessing $NAME_OF_FOLDER_SERVING_FILES
 # This name will be part of the link to the file and thus visible to others. 
 # If desired, this name can be adjusted.
 [ -z "$NAME_OF_FOLDER_SERVING_FILES" ] \
-	&& NAME_OF_FOLDER_SERVING_FILES=one-time-access \
+	&& NAME_OF_FOLDER_SERVING_FILES=ota \
 	&& echo "NAME_OF_FOLDER_SERVING_FILES set to $NAME_OF_FOLDER_SERVING_FILES"
-NAME_OF_FOLDER_SERVING_FILES=$(basename "$NAME_OF_FOLDER_SERVING_FILES")
+[ "$NAME_OF_FOLDER_SERVING_FILES" != "$(basename $NAME_OF_FOLDER_SERVING_FILES)" ] \
+	&& NAME_OF_FOLDER_SERVING_FILES="$(basename $NAME_OF_FOLDER_SERVING_FILES)" \
+	&& echo "NAME_OF_FOLDER_SERVING_FILES set to $NAME_OF_FOLDER_SERVING_FILES"
 
 ## Check, if all necessary objects are correctly installed.
 for file in "$PATH_TO_FILE_DATABASE" "$LOGFILE"
@@ -114,7 +124,7 @@ do
 		&& echo "Error: $USER requires write and read permission to $file" \
 		&& exit 1
 done	
-for folder in "$PATH_TO_FILE_DIR" "$(dirname $PATH_TO_PUBLIC_ROOT_DIR)/$(basename $NAME_OF_FOLDER_SERVING_FILES)"
+for folder in "$PATH_TO_FILE_DIR" "$(dirname $PATH_TO_PUBLIC_ROOT_DIR)/$(basename $PATH_TO_PUBLIC_ROOT_DIR)/$NAME_OF_FOLDER_SERVING_FILES"
 do
 	mkdir -p "$folder"
 	[ $? -ne 0 ] \
