@@ -62,7 +62,7 @@ $ su ota-deamon -c '/opt/one-time-access/ota-deamon.sh'
 If no errors show up, stop the execution by typing ```Strg + C``` to return to your command line.
 
 #### Autostart
-Finally setup the script to start up on system start. 
+Finally setup the script to start up on system start. The systemd method is recommended. 
 ##### init.d 
 In case of using _init.d_ add the following line to `/etc/rc.local`.
 
