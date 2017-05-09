@@ -71,7 +71,7 @@ mkdir -p /var/run/one-time-access && chown ota-deamon:ota-deamon /var/run/one-ti
 ```
 
 ##### cron
-In case of using _cron_, edit the crontab of user _root_ (or optionally _ota-deamon_) by executing 
+In case of using _cron_, edit the crontab of user _root_ by executing 
 ```
 $ crontab -e
 ```
