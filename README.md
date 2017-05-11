@@ -19,7 +19,17 @@ Otherwise files may be transfered for example via ssh/scp, sftp, samba or simila
 At the moment weblinks can be found at the log files. Which may be enhanced soon. So currently the usecase is dedicated to a single user or the administrator only.
 
 ## Installation
-First install the deamon script on your server. Then install the client script on your client machine.
+First make sure your server meets the above requirements. Then follow the instructions in the below sections.
+
+The following files are supposed to be on your _server_. Instructions can be found at the below section __Install the deamon__.
+* ota-deamon.conf
+* ota-deamon.sh
+* ota-print-link.sh
+
+The following files are supposed to be on your _client machine_.
+* ota-ssh-client.conf
+* ota-ssh-client.sh
+Those are the client script and its configuration file. Installation instructions can be found at the below section __Install the client script for ssh__.
 
 ### Install the deamon
 Clone the repository to your current directory using git (alternatively download the .zip-archive).
@@ -32,13 +42,11 @@ Execute the following commands as root user. This will copy the content of the c
 
 ```dash
 cp -a one-time-access /opt/
-chmod 755 /opt/one-time-access/ota-deamon.sh
+chmod 755 /opt/one-time-access/ota-deamon.sh /opt/one-time-access/ota-print-link.sh
 useradd -c "User that runs the one-time-access-deamon" ota-deamon
 usermod -a -G www-data ota-deamon
-mkdir /opt/one-time-access/file-dir /var/log/one-time-access \
-/var/run/one-time-access
-chown -R ota-deamon:ota-deamon /opt/one-time-access/file-dir \
-/var/log/one-time-access /var/run/one-time-access
+mkdir /opt/one-time-access/file-dir /var/log/one-time-access /var/run/one-time-access
+chown -R ota-deamon:ota-deamon /opt/one-time-access/file-dir /var/log/one-time-access /var/run/one-time-access
 touch /opt/one-time-access/database
 chown ota-deamon:ota-deamon /opt/one-time-access/database
 ```
@@ -143,15 +151,16 @@ To upload files to be served by the deamon you may want to install the upload sc
 ```
 /bin/dash ota-ssh-client.sh readme.md
 ```
-The output will look like the following.
+Since the script uses _ssh-agent_, enter the credentials for the given user on the host. The output will look like the following.
 ```
-[2017-05-05 11:00] Added file for download: /sites/vhosts/mettenbr.ink/www/ota/c78a96a540869dfdb7d6e51617d962b/readme.md
+Enter passphrase for /home/youruser/.ssh/id_rsa:
+readme.md
 https://mettenbr.ink/ota/c78a96a540869dfdb7d6e51617d962b/readme.md
 ```
-Send the second/last expression to a person of your choice since this is the online link to the file to download it once.
+Send the last line to a person of your choice since this is the online link to the file that can only be downloaded once.
 
 #### Create an alias at .bashrc
-To use the script from command line just add an alias to your `.bashrc`. Replace `~/github/one-time-access/ota-ssh-client.sh` accordingly for your setup.
+To use the script from command line just add an alias to your `.bashrc`. Replace `~/github/one-time-access/ota-ssh-client.sh` according to your setup.
 ```
 echo 'alias ota-ssh-client="/bin/dash ~/github/one-time-access/ota-ssh-client.sh"' >> ~/.bashrc
 . ~/.bashrc
