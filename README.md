@@ -167,7 +167,7 @@ echo 'alias ota-ssh-client="/bin/dash ~/github/one-time-access/ota-ssh-client.sh
 ```
 Then just execute 
 ```
-ota-ssh-client.sh <file-name>
+ota-ssh-client <file-name>
 ```
 to upload a file `<file-name>` from any directory.
 
