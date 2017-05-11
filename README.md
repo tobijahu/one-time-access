@@ -142,7 +142,7 @@ echo '/var/log/one-time-access/deamon.log {
 ### Install the client script for ssh
 To upload files to be served by the deamon you may want to install the upload script, too. 
 * Setup ssh to connect to the server using public-private-key authentification.
-* In case `PATH_TO_LOG_FILE_ON_SERVER` or `PATH_TO_FILE_DIR_ON_SERVER` at `ota-deamon.conf` on the server is not default, both variables should be defined accordingly at `ota-ssh-client.conf`. 
+* In case on the server `PATH_TO_FILE_DIR` at `ota-deamon.conf` was changed, `PATH_TO_FILE_DIR_ON_SERVER` should be defined accordingly at `ota-ssh-client.conf`. 
 * At `ota-ssh-client.conf` set `SSH_REMOTE_HOST` identical to the user@hostname combination when using the ssh CLI as given at the example and uncomment the line. 
 * At `ota-ssh-client.conf` uncomment `SSH_PRIVATE_ID` and define it simply as the path to the private key that is setup to authenticate at the server. So the path could be for example `~/.ssh/id_rsa`.
 
