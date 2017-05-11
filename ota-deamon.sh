@@ -53,16 +53,29 @@ as the desired logging file and define this path at
 $CONFIGURATION_FILE" \
 	&& exit 1
 
+## Check permissions for a specific file to be created and to be writable
+CheckForTempFilePermissions()
+{
+	# $1 : path to file
+	
+	[ ! -d "$(dirname $1)" ] \
+		&& echo "Error: $(dirname $1) does not exist or is not a directory." \
+		&& return 1
+	[ ! -w "$(dirname $1)" ] \
+		&& echo "Error: $(dirname $1) is not writeable by $USER." \
+		&& return 1
+	return 0
+}
+
+## Check, if $OTA_TMP_FILE can be used accordingly
+CheckForTempFilePermissions "$OTA_TMP_FILE"
+[ $? -ne 0 ] && exit 1
 
 ## Processing $PATH_TO_PID_FILE
 if [ "$1" != "systemd" ]
 then
-	[ ! -d "$(dirname $PATH_TO_PID_FILE)" ] \
-		&& echo "Error: $(dirname $PATH_TO_PID_FILE) does not exist or is not a directory." \
-		&& exit 1
-	[ ! -w "$(dirname $PATH_TO_PID_FILE)" ] \
-		&& echo "Error: $(dirname $PATH_TO_PID_FILE) is not writeable by $USER." \
-		&& exit 1
+	CheckForTempFilePermissions "$PATH_TO_PID_FILE"
+	[ $? -ne 0 ] && exit 1
 	# The deamon should only be running once, otherwise it may produce errors.
 	if [ -e "$PATH_TO_PID_FILE" ]
 	then
@@ -139,16 +152,40 @@ done
 
 DeleteFile()
 {
-	# $1 : path to file
+	# $1 : path of file
+	# $2 : foldername identifier
+	
+	# $OTA_TMP_FILE
+	# $PATH_TO_FILE_DATABASE
+	# $LOGFILE
+	
+	[ -z "$1" ] || [ -z "$2" ] \
+		&& return 1
 	
 	# Delete the file
-	rm -r $(dirname $1)
-	
-	# remove the file from database
-	sed -i '\|^'"$1"'|d' $PATH_TO_FILE_DATABASE
-	
-	# log the deletion
-	echo "[$(date +%F\ %R)] Removed file: $1" >> $LOGFILE
+	rm -rf $(dirname $1)
+	if [ $? -eq 0 ]
+	then
+		delExitCode=0
+		# remove the file from database
+		sed '\|^'"$2"'|d' $PATH_TO_FILE_DATABASE > $OTA_TMP_FILE
+		delExitCode=$(($delExitCode + $?))
+		cat $OTA_TMP_FILE > $PATH_TO_FILE_DATABASE
+		delExitCode=$(($delExitCode + $?))
+		rm $OTA_TMP_FILE
+		delExitCode=$(($delExitCode + $?))
+		
+		# log the deletion
+		if [ $delExitCode -ne 0 ]
+		then
+			echo "[$(date +%F\ %R)] Error: Could not delete file from database: $1" >> $LOGFILE
+		else
+			echo "[$(date +%F\ %R)] Removed file: $1" >> $LOGFILE
+		fi
+	else
+		# log the deletion
+		echo "[$(date +%F\ %R)] Error: Could not remove file: $1" >> $LOGFILE
+	fi
 	
 	return 0
 }
@@ -178,6 +215,12 @@ EchoNewFiles()
 AddNewFile()
 {
 	# $1 filePath (from EchoNewFiles)
+	
+	# $PATH_TO_FILE_DIR
+	# $WEBSERVER_ACCESS_LOGFILE
+	# $PATH_TO_PUBLIC_ROOT_DIR
+	# $NAME_OF_FOLDER_SERVING_FILES
+	# $LOGFILE
 	
 	# Check, if $1 is empty
 	if [ -z "$1" ]
@@ -214,7 +257,8 @@ AddNewFile()
 		# Generate a unique name for the file. sha512 does this as fast as md5sum. 
 		# To be able to serve the files with idenitcal names twice, the seconds since 1970 are used
 		# to provide a unique, hard-to-guess folder name
-		folderName=$(sha512sum "$PATH_TO_FILE_DIR/$newBasename" | awk -F ' ' '{print $1}')$(date +%s)
+		sha512SumOfFile=$(sha512sum "$PATH_TO_FILE_DIR/$newBasename" | awk -F ' ' '{print $1}')
+		folderName=$sha512SumOfFile$(date +%s)
 		
 		# If two files with the same file name should be served at the same time $folderName
 		# differs only in the last characters/digits. In this case it is better to have a whole
@@ -236,8 +280,7 @@ AddNewFile()
 		
 		for logfile in $WEBSERVER_ACCESS_LOGFILE*
 		do
-			[ $(grep -c $folderName $logfile) -ne 0 ] \
-				&& folderName=""
+			[ $(grep -c $folderName $logfile) -ne 0 ] && folderName=""
 		done
 		
 		# The elapsed time will be different for each circle of the while loop and so does $folderName.
@@ -255,11 +298,10 @@ AddNewFile()
 		&& return $?
 	
 	# Add the new file with date to the database
-	echo "$newPath $folderName $(date +%s)" >> $PATH_TO_FILE_DATABASE
+	echo "$folderName $(basename $newPath) $sha512SumOfFile $(date +%s)" >> $PATH_TO_FILE_DATABASE
 	
 	# Log the added file and provide a URL to the file
-	echo "[$(date +%F\ %R)] Added file for download: $newPath
-$ROOT_URL_OF_PUBLIC_DIR$NAME_OF_FOLDER_SERVING_FILES/$folderName/$newBasename" >> $LOGFILE
+	echo "[$(date +%F\ %R)] Added file for download: $newPath" >> $LOGFILE
 	return $?
 }
 
@@ -281,7 +323,8 @@ do
 		# save current time in seconds
 		lastRunOfAddNewFile=$(date +%s)
 		# serve all new files from $PATH_TO_FILE_DIR under a hard-to-guess link
-		echo "$(EchoNewFiles)" | while read newFile
+#		echo "$(EchoNewFiles)" | while read newFile
+		EchoNewFiles | while read newFile
 		do
 			AddNewFile "$newFile"
 		done
@@ -304,11 +347,12 @@ do
 		# If there are no files listed, the deamon does not have to do anything
 		cat $PATH_TO_FILE_DATABASE | while read fileEntry
 		do
-			pathToThisFile=$(echo "$fileEntry" | awk -F ' ' '{print $1}')
+			pathToThisFile=$PATH_TO_PUBLIC_ROOT_DIR/$NAME_OF_FOLDER_SERVING_FILES/
+			pathToThisFile=$pathToThisFile$(echo "$fileEntry" | awk -F ' ' '{print $1"/"$2}')
 			for logFile in $WEBSERVER_ACCESS_LOGFILE*
 			do
 				numberOfAccesses=$(grep -c "$(echo $fileEntry \
-					| awk -F ' ' '{print $2}')" $logFile)
+					| awk -F ' ' '{print $1}')" $logFile)
 				
 				# Detect and log multiple downloads/accesses
 				if [ $numberOfAccesses -gt 1 ]
@@ -321,17 +365,17 @@ do
 				# Delete accessed files
 				if [ $numberOfAccesses -ne 0 ]
 				then
-					DeleteFile $pathToThisFile
+					DeleteFile $pathToThisFile $(echo "$fileEntry" | awk -F ' ' '{print $1}')
 				fi
 			done
 			
 			# Delete old files
 			if [ $(date +%s) -gt $(($(echo $fileEntry \
-				| awk -F ' ' '{print $3}') + $MAX_SECONDS_UNTIL_DELETION)) ]
+				| awk -F ' ' '{print $4}') + $MAX_SECONDS_UNTIL_DELETION)) ]
 			then
 				echo "[$(date +%F\ %R)] Initiating deletion of file, since it is older \
 than $MAX_SECONDS_UNTIL_DELETION seconds." >> $LOGFILE
-				DeleteFile $pathToThisFile
+				DeleteFile $pathToThisFile $(echo "$fileEntry" | awk -F ' ' '{print $1}')
 			fi
 		done
 		sleep 5
