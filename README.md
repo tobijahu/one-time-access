@@ -45,10 +45,9 @@ cp -a one-time-access /opt/
 chmod 755 /opt/one-time-access/ota-deamon.sh /opt/one-time-access/ota-print-link.sh
 useradd -c "User that runs the one-time-access-deamon" ota-deamon
 usermod -a -G www-data ota-deamon
-mkdir /opt/one-time-access/file-dir /var/log/one-time-access /var/run/one-time-access
-chown -R ota-deamon:ota-deamon /opt/one-time-access/file-dir /var/log/one-time-access /var/run/one-time-access
 touch /opt/one-time-access/database
-chown ota-deamon:ota-deamon /opt/one-time-access/database
+mkdir /opt/one-time-access/file-dir /var/log/one-time-access /var/run/one-time-access
+chown -R ota-deamon:ota-deamon /opt/one-time-access/database /opt/one-time-access/file-dir /var/log/one-time-access /var/run/one-time-access
 ```
 
 Adjust the configuration file using your preferred editor (in this instruction _vim_ is used).
