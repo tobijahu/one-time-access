@@ -55,6 +55,7 @@ Adjust the configuration file using your preferred editor (in this instruction _
 ```dash
 $ vim /opt/one-time-access/ota-deamon.conf
 ```
+Adjust `PATH_TO_PUBLIC_ROOT_DIR`, `ROOT_URL_OF_PUBLIC_DIR` and `WEBSERVER_ACCESS_LOGFILE` according to your setup and uncomment the lines.
 
 To give the script write permissions to a folder served by your webserver, make sure it has sufficient permissions. In case at your configuration the variable NAME_OF_FOLDER_SERVING_FILES is defined as `ota` and PATH_TO_PUBLIC_ROOT_DIR is defined as `/var/www/html`, execute the following as root.
 
