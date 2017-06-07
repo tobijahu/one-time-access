@@ -145,10 +145,10 @@ echo '/var/log/one-time-access/deamon.log {
 To upload files to be served by the deamon you may want to install the upload script, too. 
 * Setup ssh to connect to the server using public-private-key authentification.
 * Adjust the configuration at `ota-ssh-client.conf` accordingly to your system setup
-		* In case `PATH_TO_FILE_DIR` was changed on the server at `ota-deamon.conf`, `PATH_TO_FILE_DIR_ON_SERVER` should be defined accordingly. 
-		* Uncomment `SSH_REMOTE_HOST` and set it identical to the user@hostname combination when using ssh at the CLI. 
-		* Uncomment `SSH_PRIVATE_ID` and define it simply as the path to the private key that is setup to authenticate at the server. So the path could be for example `~/.ssh/id_rsa`.
-		* In case the executing user of ota-deamon.sh is not `ota-deamon`, adjust `OTAUSER` accordingly. 
+  * In case `PATH_TO_FILE_DIR` was changed on the server at `ota-deamon.conf`, `PATH_TO_FILE_DIR_ON_SERVER` should be defined accordingly. 
+  * Uncomment `SSH_REMOTE_HOST` and set it identical to the user@hostname combination when using ssh at the CLI. 
+  * Uncomment `SSH_PRIVATE_ID` and define it simply as the path to the private key that is setup to authenticate at the server. So the path could be for example `~/.ssh/id_rsa`.
+  * In case the executing user of ota-deamon.sh is not `ota-deamon`, adjust `OTAUSER` accordingly. 
 
 `cd` to the folder of the client script. Then for example upload a file `readme.md` by executing
 ```
