@@ -78,7 +78,7 @@ $ su ota-deamon -c '/opt/one-time-access/ota-deamon.sh'
 If no errors show up, stop the execution by typing ```Strg + C``` to return to your command line.
 
 #### Autostart
-Finally setup the script to start up on system start. The systemd method is recommended. 
+Finally setup the script to start up on system start. Here three different ways are described: [systemd](#systemd), [init.d / file-rc](#initd--file-rc) and [cron](#cron). The systemd method is recommended. 
 ##### systemd
 In case of systemd create a service file under `/etc/systemd/system/ota-deamon.service` as follows.
 ```dash
