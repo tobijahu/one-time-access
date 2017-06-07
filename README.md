@@ -27,7 +27,7 @@ The following files are supposed to be on your _server_. Instructions can be fou
 * ota-print-link.sh
 * ota-move-lock.sh
 
-The following files are supposed to be on your _client machine_ and will be discussed at the section [Install the client script for ssh](### Install the client script for ssh).
+The following files are supposed to be on your _client machine_ and will be discussed at the section [Install the client script](#install-the-client-script).
 * ota-ssh-client.conf
 * ota-ssh-client.sh
 
@@ -141,7 +141,7 @@ echo '/var/log/one-time-access/deamon.log {
 }' > /etc/logrotate.d/one-time-access
 ```
 
-### Install the client script for ssh
+### Install the client script
 To upload files to be served by the deamon you may want to install the upload script, too. 
 * Setup ssh to connect to the server using public-private-key authentification.
 * Adjust the configuration at `ota-ssh-client.conf` accordingly to your system setup
