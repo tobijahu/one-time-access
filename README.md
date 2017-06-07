@@ -21,7 +21,7 @@ At the moment weblinks can be found at the log files. Which may be enhanced soon
 ## Installation
 First make sure your server meets the above requirements. Then follow the instructions in the below sections.
 
-The following files are supposed to be on your _server_. Instructions can be found at the below section __Install the deamon__.
+The following files are supposed to be on your _server_. Instructions can be found at the below section [Install the deamon](#install-the-deamon).
 * ota-deamon.conf
 * ota-deamon.sh
 * ota-print-link.sh
@@ -38,10 +38,18 @@ Clone the repository to your current directory using git (alternatively download
 $ git clone https://github.com/tobijahu/one-time-access.git one-time-access
 ```
 
-Execute the following commands as root user. This will copy the content of the cloned repository to `/opt/one-time-access`, create a new user `ota-deamon` to run the deamon script, add ota-deamon to the group of your webserver user (e.g. `www-data`) and create all necessary files and folders. 
+Now copy all files to the server making use of `scp`. Replace `root@yourserver` according to your setup.
+```dash
+$ scp one-time-access root@yourserver:/opt/
+```
+If you executed the above git clone command on the server, just copy the files using `cp`.
+```dash
+$ cp -a one-time-access /opt/
+```
+
+Execute the following commands with root privileges. This will create a new user `ota-deamon` to run the deamon script, add ota-deamon to the group of your webserver user `www-data` (if your webserver user is not www-data, replace it with yours) and set all necessary permissions. 
 
 ```dash
-cp -a one-time-access /opt/
 chmod 755 /opt/one-time-access/ota-deamon.sh /opt/one-time-access/ota-print-link.sh /opt/one-time-access/ota-move-lock.sh
 useradd -c "User that runs the one-time-access-deamon" ota-deamon
 usermod -a -G www-data ota-deamon
