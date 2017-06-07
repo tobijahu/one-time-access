@@ -1,9 +1,7 @@
 #!/bin/dash
 
-# one-time-access print new file script
-#
 # This script returns all download links to files matching a
-# given SHA512 checksum
+# given SHA512 checksum of this ota-installation
 
 
 ## Check for correct input
@@ -45,7 +43,7 @@ Execute the following as root to fix this." \
 	&& echo "Warning: For security reasons it might be better to run this deamon as \
 another user than root."
 
-# After all security checks are done, th configuration file can safely be
+# After all security checks are done, the configuration file can safely be
 # included.
 . "$CONFIGURATION_FILE"
 
@@ -58,19 +56,25 @@ another user than root."
 	&& echo "Error: $PATH_TO_FILE_DATABASE does not exist." \
 	&& exit 1
 
-
 ## Save the current time in seconds from 1.1.1970
 nowInSeconds=$(date +%s)
+
+echo -n "Waiting for server response."
 
 ## It takes some time until the uploaded file is added to the directory
 ## on the server. That the file is present, will be indicated by the
 ## date of modification of the file dir on the server. 
 while [ $nowInSeconds -ge $(stat -c %Y $PATH_TO_FILE_DIR) ]
 do
+	echo -n "." # Progress point
         sleep 5
 done
 
+## Final progress dot 
+echo "."
+
 ## List all files with the given checksum
+echo 'Link(s) to file(s):'
 grep $1 $PATH_TO_FILE_DATABASE | awk -F ' ' '{print "'"$ROOT_URL_OF_PUBLIC_DIR$NAME_OF_FOLDER_SERVING_FILES/"'"$1"/"$2}'
 
 [ $? -ne 0 ] \

@@ -112,6 +112,19 @@ MAX_SECONDS_UNTIL_DELETION=$(($MAX_DAYS_UNTIL_DELETION*24*60*60))
 	&& echo "Error: PATH_TO_PUBLIC_ROOT_DIR does not exist: $PATH_TO_PUBLIC_ROOT_DIR" \
 	&& exit 1
 
+## Processing move-file lock file
+[ -z "$PATH_TO_MOVE_LOCK" ] \
+	&& echo "Error: PATH_TO_MOVE_LOCK is not set or is empty." \
+        && exit 1
+if [ -e "$PATH_TO_MOVE_LOCK" ]
+then
+	echo "Warning: $PATH_TO_MOVE_LOCK exists. Removing file."
+	rm -f $PATH_TO_MOVE_LOCK
+	[ $? -ne 0 ] \
+		&& echo "Error: Cannot delete $PATH_TO_MOVE_LOCK." \
+		&& exit 1
+fi
+
 ## Preprocessing $NAME_OF_FOLDER_SERVING_FILES
 # This name will be part of the link to the file and thus visible to others. 
 # If desired, this name can be adjusted.
@@ -212,6 +225,45 @@ EchoNewFiles()
 	return 0
 }
 
+GetRandomFolderName()
+{
+	## Give a folder name using the output of /dev/urandom
+	
+	cat /dev/urandom | tr -cd 'a-z0-9' | head -c 32
+	return $?
+}
+
+GetFolderNameViaCurrentTimeAndChecksum()
+{
+	# $1 checksum of file
+	
+	## Give a folder name based on the hash of the file and the current time
+	
+	[ -z "$1" ] \
+		&& return 1
+	
+	# To be able to serve the files with idenitcal names twice, the seconds since 1970 are used
+	# to provide a unique, hard-to-guess folder name
+	string=$1$(date +%s)
+	
+	# If two files with the same file name should be served at the same time $folderName
+	# differs only in the last characters/digits. In this case it is better to have a whole
+	# new checksum, to do the next step of shortening afterwards.
+	string=$(echo $string | sha512sum | awk -F ' ' '{print $1}')
+	
+	# The folder name is now 129 symbols long. To prevent that somebody guesses this string, this 
+	# length is not necessary. So it should be shortened for practical reasons. Still after
+	# shortening it would be not probable that this folder already exists. Still if it exists, it 
+	# should not be probable that a file with the same name/basename already exists.
+	string=$(echo $string | sed -e 's/^.\{48\}\|.\{49\}$//g')
+	# Now folderName has a length of 32.
+	
+	[ ! -z "$string" ] \
+		&& echo "$string" \
+		&& return 0
+	return 1
+}
+
 AddNewFile()
 {
 	# $1 filePath (from EchoNewFiles)
@@ -251,26 +303,17 @@ AddNewFile()
 		mv "$1" "$PATH_TO_FILE_DIR/$newBasename"
 	fi
 	
+	# Get a Checksum of the file. This is primarily to recognize it in the later process.
+	# sha512 is as fast as md5sum. 
+	sha512SumOfFile=$(sha512sum "$PATH_TO_FILE_DIR/$newBasename" | awk -F ' ' '{print $1}')
+	
 	folderName=""
 	while [ -z "$folderName" ]
 	do
-		# Generate a unique name for the file. sha512 does this as fast as md5sum. 
-		# To be able to serve the files with idenitcal names twice, the seconds since 1970 are used
-		# to provide a unique, hard-to-guess folder name
-		sha512SumOfFile=$(sha512sum "$PATH_TO_FILE_DIR/$newBasename" | awk -F ' ' '{print $1}')
-		folderName=$sha512SumOfFile$(date +%s)
 		
-		# If two files with the same file name should be served at the same time $folderName
-		# differs only in the last characters/digits. In this case it is better to have a whole
-		# new checksum, to do the next step of shortening afterwards.
-		folderName=$(echo $folderName | sha512sum | awk -F ' ' '{print $1}')
-		
-		# The folder name is now 129 symbols long. To prevent that somebody guesses this string, this 
-		# length is not necessary. So it should be shortened for practical reasons. Still after
-		# shortening it would be not probable that this folder already exists. Still if it exists, it 
-		# should not be probable that a file with the same name/basename already exists.
-		folderName=$(echo $folderName | sed -e 's/^.\{48\}\|.\{49\}$//g')
-		# Now folderName has a length of 32.
+		# Create a folder name
+		#folderName=$(GetFolderNameViaCurrentTimeAndChecksum "$sha512SumOfFile")
+		folderName=$(GetRandomFolderName)
 		
 		# But since in the whole process the folder (not the file) will be selected for deletetion, 
 		# the folder name should be a unique identifier. So here we go with checking and testing for 
@@ -306,6 +349,7 @@ AddNewFile()
 }
 
 
+
 #############################
 # start loop
 #
@@ -320,14 +364,19 @@ do
 	# check, if the folder $PATH_TO_FILE_DIR was changed -- for example by adding a new file to it.
 	if [ $(stat -c %Y $PATH_TO_FILE_DIR ) -ge $lastRunOfAddNewFile ]
 	then
-		# save current time in seconds
-		lastRunOfAddNewFile=$(date +%s)
-		# serve all new files from $PATH_TO_FILE_DIR under a hard-to-guess link
-#		echo "$(EchoNewFiles)" | while read newFile
-		EchoNewFiles | while read newFile
-		do
-			AddNewFile "$newFile"
-		done
+		if [ ! -e "$PATH_TO_MOVE_LOCK" ]
+		then
+			# save current time in seconds
+			lastRunOfAddNewFile=$(date +%s)
+			# serve all new files from $PATH_TO_FILE_DIR under a hard-to-guess link
+			EchoNewFiles | while read newFile
+			do
+				AddNewFile "$newFile"
+			done
+		else
+			echo "[$(date +%F\ %R)] Lock file for move process exists. Skipping to \
+add new files" >> $LOGFILE
+		fi
 	fi
 	
 	# check for access each 5 seconds and add new files after 30 seconds

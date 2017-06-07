@@ -9,7 +9,7 @@ PATH_TO_CONFIGURATION_FILE=$(dirname $(readlink -f $0))/ota-ssh-client.conf
 . $PATH_TO_CONFIGURATION_FILE
 
 # Check the configuration on this client
-for constant in "$SSH_PRIVATE_ID" "$SSH_REMOTE_HOST" "$PATH_TO_FILE_DIR_ON_SERVER" "$PRINT_LINK_SCRIPT"
+for constant in "$SSH_PRIVATE_ID" "$SSH_REMOTE_HOST" "$PATH_TO_FILE_DIR_ON_SERVER" "$PRINT_LINK_SCRIPT" "$LOCK_SCRIPT" "$OTAUSER"
 do
 	[ -z "$constant" ] \
 		&& echo "Error: A constant at the configuration is empty." \
@@ -41,10 +41,16 @@ sha512SumOfFile=$(sha512sum "$1" | awk -F ' ' '{print $1}')
 ## 40 seconds. Then run the script, which is defined in the called
 ## string. 
 ssh-agent -t 40 /bin/dash -c "ssh-add $SSH_PRIVATE_ID
+# Create lock file
+ssh $SSH_REMOTE_HOST su $OTAUSER -c \'/bin/dash $LOCK_SCRIPT create\'
 # Copy the file to the server
+echo 'Copying file to server...'
 scp -Cp \"$1\" \"$SSH_REMOTE_HOST:$(dirname $PATH_TO_FILE_DIR_ON_SERVER)/$(basename $PATH_TO_FILE_DIR_ON_SERVER)\"
+# Remove move-lock file
+ssh $SSH_REMOTE_HOST su $OTAUSER -c \'/bin/dash $LOCK_SCRIPT remove\'
 # Obtain the link from the server
-ssh $SSH_REMOTE_HOST /bin/dash $PRINT_LINK_SCRIPT $sha512SumOfFile
+#ssh -t -t $SSH_REMOTE_HOST /bin/dash $PRINT_LINK_SCRIPT $sha512SumOfFile
+ssh $SSH_REMOTE_HOST su $OTAUSER -c \'/bin/dash $PRINT_LINK_SCRIPT $sha512SumOfFile\'
 exit"
 
 exit 0

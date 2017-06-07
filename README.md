@@ -25,11 +25,11 @@ The following files are supposed to be on your _server_. Instructions can be fou
 * ota-deamon.conf
 * ota-deamon.sh
 * ota-print-link.sh
+* ota-move-lock.sh
 
-The following files are supposed to be on your _client machine_.
+The following files are supposed to be on your _client machine_ and will be discussed at the section [Install the client script for ssh](### Install the client script for ssh).
 * ota-ssh-client.conf
 * ota-ssh-client.sh
-Those are the client script and its configuration file. Installation instructions can be found at the below section __Install the client script for ssh__.
 
 ### Install the deamon
 Clone the repository to your current directory using git (alternatively download the .zip-archive).
@@ -42,7 +42,7 @@ Execute the following commands as root user. This will copy the content of the c
 
 ```dash
 cp -a one-time-access /opt/
-chmod 755 /opt/one-time-access/ota-deamon.sh /opt/one-time-access/ota-print-link.sh
+chmod 755 /opt/one-time-access/ota-deamon.sh /opt/one-time-access/ota-print-link.sh /opt/one-time-access/ota-move-lock.sh
 useradd -c "User that runs the one-time-access-deamon" ota-deamon
 usermod -a -G www-data ota-deamon
 touch /opt/one-time-access/database
@@ -50,7 +50,7 @@ mkdir /opt/one-time-access/file-dir /var/log/one-time-access /var/run/one-time-a
 chown -R ota-deamon:ota-deamon /opt/one-time-access/database /opt/one-time-access/file-dir /var/log/one-time-access /var/run/one-time-access
 ```
 
-Adjust the configuration file using your preferred editor (in this instruction _vim_ is used).
+Adjust the configuration file using your preferred editor (here _vim_ is used).
 
 ```dash
 $ vim /opt/one-time-access/ota-deamon.conf
@@ -71,23 +71,6 @@ If no errors show up, stop the execution by typing ```Strg + C``` to return to y
 
 #### Autostart
 Finally setup the script to start up on system start. The systemd method is recommended. 
-##### init.d 
-In case of using _init.d_ add the following line to `/etc/rc.local`.
-
-```
-mkdir -p /var/run/one-time-access && chown ota-deamon:ota-deamon /var/run/one-time-access && su ota-deamon -c '/opt/one-time-access/ota-deamon.sh &'
-```
-
-##### cron
-In case of using _cron_, edit the crontab of user _root_ by executing 
-```
-$ crontab -e
-```
-and add the following line.
-```
-@reboot mkdir -p /var/run/one-time-access && chown ota-deamon:ota-deamon /var/run/one-time-access && su ota-deamon -c '/opt/one-time-access/ota-deamon.sh &'
-```
-
 ##### systemd
 In case of systemd create a service file under `/etc/systemd/system/ota-deamon.service` as follows.
 ```dash
@@ -127,6 +110,24 @@ Finally, if everything is running, enable autostart by executing the following c
 systemctl enable ota-deamon.service
 ```
 
+##### init.d / file-rc
+In case of using _init.d_ add the following line to `/etc/rc.local`.
+
+```
+mkdir -p /var/run/one-time-access && chown ota-deamon:ota-deamon /var/run/one-time-access && su ota-deamon -c '/opt/one-time-access/ota-deamon.sh &'
+```
+
+##### cron
+To autostart the deamon using _cron_, edit the crontab of user _root_ by executing 
+```
+$ crontab -e
+```
+and add the following line.
+```
+@reboot mkdir -p /var/run/one-time-access && chown ota-deamon:ota-deamon /var/run/one-time-access && su ota-deamon -c '/opt/one-time-access/ota-deamon.sh &'
+```
+
+
 #### Logrotate
 By and by the log file will grow and thus waste space on your hard drive. To compress log files you may use _logrotate_. The following command will configure logrotate to split and compress log files of the `ota-deamon.sh`.
 
@@ -143,9 +144,11 @@ echo '/var/log/one-time-access/deamon.log {
 ### Install the client script for ssh
 To upload files to be served by the deamon you may want to install the upload script, too. 
 * Setup ssh to connect to the server using public-private-key authentification.
-* In case on the server `PATH_TO_FILE_DIR` at `ota-deamon.conf` was changed, `PATH_TO_FILE_DIR_ON_SERVER` should be defined accordingly at `ota-ssh-client.conf`. 
-* At `ota-ssh-client.conf` set `SSH_REMOTE_HOST` identical to the user@hostname combination when using the ssh CLI as given at the example and uncomment the line. 
-* At `ota-ssh-client.conf` uncomment `SSH_PRIVATE_ID` and define it simply as the path to the private key that is setup to authenticate at the server. So the path could be for example `~/.ssh/id_rsa`.
+* Adjust the configuration at `ota-ssh-client.conf` accordingly to your system setup
+		* In case `PATH_TO_FILE_DIR` was changed on the server at `ota-deamon.conf`, `PATH_TO_FILE_DIR_ON_SERVER` should be defined accordingly. 
+		* Uncomment `SSH_REMOTE_HOST` and set it identical to the user@hostname combination when using ssh at the CLI. 
+		* Uncomment `SSH_PRIVATE_ID` and define it simply as the path to the private key that is setup to authenticate at the server. So the path could be for example `~/.ssh/id_rsa`.
+		* In case the executing user of ota-deamon.sh is not `ota-deamon`, adjust `OTAUSER` accordingly. 
 
 `cd` to the folder of the client script. Then for example upload a file `readme.md` by executing
 ```
@@ -154,7 +157,10 @@ To upload files to be served by the deamon you may want to install the upload sc
 Since the script uses _ssh-agent_, enter the credentials for the given user on the host. The output will look like the following.
 ```
 Enter passphrase for /home/youruser/.ssh/id_rsa:
-readme.md
+Copying file to server...
+readme.md                                   100%  155    48.5KB/s   00:00
+Waiting for server response.....
+Link(s) to file(s):
 https://mettenbr.ink/ota/c78a96a540869dfdb7d6e51617d962b/readme.md
 ```
 Send the last line to a person of your choice since this is the online link to the file that can only be downloaded once.
