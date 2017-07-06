@@ -31,6 +31,62 @@ The following files are supposed to be on your _client machine_ and will be disc
 * ota-ssh-client.conf
 * ota-ssh-client.sh
 
+### Configure Lighttpd
+The configuration of the webserver is crucial to the thought behind one-time-access. First you will need to configure lighttpd such that only ciphers are supported that are not broken. So you may configure your `/etc/lighttpd/lighttpd.conf` so that 443 connections are encypted with the following settings. 
+```
+# Verschlüsselung hinzufügen
+$SERVER["socket"] == ":443" {
+  ssl.engine = "enable",
+  ssl.pemfile = "/etc/lighttpd/certs/lighttpd.pem",
+  # Weitere Einstellungen zur Absicherung:
+  #ssl.use-compression = "disable", #this is disabled at compile time since 1.4.28
+  ssl.use-sslv2 = "disable",
+  ssl.use-sslv3 = "disable",
+  ssl.cipher-list = "EECDH+AESGCM:EDH+AESGCM:AES128+EECDH:AES128+EDH",
+  ssl.dh-file = "/etc/lighttpd/certs/dhparam.pem",
+  ssl.ec-curve = "secp384r1",
+  ssl.ca-file = "/etc/lighttpd/certs/lets-encrypt-x3-cross-signed.pem",
+}
+
+# HTTP_Strict_Transport_Security
+server.modules += ( "mod_setenv" )
+$HTTP["scheme"] == "https" {
+  setenv.add-response-header  = ( "Strict-Transport-Security" => "max-age=63072000; includeSubdomains; preload", "X-Frame-Options" => "DENY" )
+}
+```
+To detect that a file has been accessed via the webserver, it is necessary to activate access logging. Therefor I added the following to my `lighttpd.conf` file.
+```
+# Logging
+server.modules += ( "mod_accesslog" )
+accesslog.filename = "/var/log/lighttpd/access.log"
+# %h : name or address of remote-host
+# %s : status code
+# %b : bytes sent for the body
+# %I : bytes incoming
+# %O : bytes outgoing
+# %U : request URL
+# %t : timestamp of the end-time of the request
+accesslog.format = "%h %s %b %I %O %U %t \"%{Referer}i\" \"%{User-Agent}i\""
+```
+Since accesses via port 80 are not encrypted, all requests to the one-time-access folder (here "ota") via port 80 should be redirected to port 443. This is done by the following code.
+```
+# Redirect only traffic of one-time-access to https
+$SERVER["socket"] == ":80" {
+  $HTTP["host"] =~ "(ota/.*)" {
+    url.redirect = ( "^/(ota/.*)" => "https://%1/ota/$1" )
+  }
+}
+```
+To redirect all port 80 requests to port 443 add the following code to your `lighttpd.conf`.
+```
+# Redirect all traffic to https
+$SERVER["socket"] == ":80" {
+  $HTTP["host"] =~ "(.*)" {
+    url.redirect = ( "^/(.*)" => "https://%1/$1" )
+  }
+}
+```
+
 ### Install the deamon
 Clone the repository to your current directory using git (alternatively download the .zip-archive).
 
@@ -170,6 +226,7 @@ readme.md                                   100%  155    48.5KB/s   00:00
 Waiting for server response.....
 Link(s) to file(s):
 https://mettenbr.ink/ota/c78a96a540869dfdb7d6e51617d962b/readme.md
+Link is valid until Thu Jul 20 21:44:09 UTC 2017
 ```
 Send the last line to a person of your choice since this is the online link to the file that can only be downloaded once.
 
