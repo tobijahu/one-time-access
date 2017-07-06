@@ -400,8 +400,15 @@ add new files" >> $LOGFILE
 			pathToThisFile=$pathToThisFile$(echo "$fileEntry" | awk -F ' ' '{print $1"/"$2}')
 			for logFile in $WEBSERVER_ACCESS_LOGFILE*
 			do
-				numberOfAccesses=$(grep -c "$(echo $fileEntry \
-					| awk -F ' ' '{print $1}')" $logFile)
+				thisFileName="$(echo $fileEntry| awk -F ' ' '{print $2}')"
+				thisFileFolder="$(echo $fileEntry| awk -F ' ' '{print $1}')"
+				thisFilePath="/$NAME_OF_FOLDER_SERVING_FILES/$thisFileFolder/$thisFileName"
+				# Note that a line in the access log is expected to look as the following
+				# 87.253.189.229 206 303793 490 304169 /ota/y9rhjf1nrzelyyafz0thiyri1qb6a0nh/bewerbung-data-scientist-tm.pdf [05/Jul/2017:11:36:08 +0000] "https://mettenbr.ink/ota/y9rhjf1nrzelyyafz0thiyri1qb6a0nh/bewerbung-data-scientist-tm.pdf" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36" 
+				numberOfAccesses=$(grep -c " $thisFilePath " $logFile)
+#				# Old method
+#				numberOfAccesses=$(awk -F ' ' '{print $}' | grep -c "$(echo $fileEntry \
+#					| awk -F ' ' '{print $1}')" $logFile)
 				
 				# Detect and log multiple downloads/accesses
 				if [ $numberOfAccesses -gt 1 ]

@@ -56,6 +56,13 @@ another user than root."
 	&& echo "Error: $PATH_TO_FILE_DATABASE does not exist." \
 	&& exit 1
 
+[ -z "$MAX_DAYS_UNTIL_DELETION" ] \
+	&& echo "Error: MAX_DAYS_UNTIL_DELETION is empty." \
+	&& exit 1
+
+[ $MAX_DAYS_UNTIL_DELETION -lt 0 ] \
+	&& echo "Warning: MAX_DAYS_UNTIL_DELETION is set to $MAX_DAYS_UNTIL_DELETION"
+
 ## Save the current time in seconds from 1.1.1970
 nowInSeconds=$(date +%s)
 
@@ -73,18 +80,27 @@ done
 ## Final progress dot 
 echo "."
 
-## List all files with the given checksum
-echo 'Link(s) to file(s):'
-grep $1 $PATH_TO_FILE_DATABASE | awk -F ' ' '{print "'"$ROOT_URL_OF_PUBLIC_DIR$NAME_OF_FOLDER_SERVING_FILES/"'"$1"/"$2}'
-
-[ $? -ne 0 ] \
-	&& echo "Error: Could not print link to file." \
-	&& tail $PATH_TO_LOG_FILE \
-	&& exit 1
-
 ## Give the last lines of the log file, to obtain the link.
 [ $(grep -c $1 $PATH_TO_FILE_DATABASE) -eq 0 ]\
 	&& echo "No files found." \
+	&& tail $PATH_TO_LOG_FILE \
+	&& exit 1
+
+## List all files with the given checksum and their prospective deletion times
+echo 'Link(s) to file(s):'
+grep $1 $PATH_TO_FILE_DATABASE | while read fileInDatabase
+do
+	# Print the Link
+	echo $fileInDatabase | awk -F ' ' '{print "'"$ROOT_URL_OF_PUBLIC_DIR$NAME_OF_FOLDER_SERVING_FILES/"'"$1"/"$2}'
+	# Print the date until the link is valid
+	[ $MAX_DAYS_UNTIL_DELETION -ge 0 ] \
+		&& MAX_SECONDS_UNTIL_DELETION=$(($MAX_DAYS_UNTIL_DELETION*24*60*60)) \
+		&& echo "Link is valid until "$(date -d @$(($(echo $fileInDatabase | awk -F ' ' '{print $4}') + $MAX_SECONDS_UNTIL_DELETION)))
+done
+
+# Check success of the process to obtain the links
+[ $? -ne 0 ] \
+	&& echo "Error: Could not print link to file." \
 	&& tail $PATH_TO_LOG_FILE \
 	&& exit 1
 
