@@ -32,7 +32,7 @@ The following files are supposed to be on your _client machine_ and will be disc
 * ota-ssh-client.sh
 
 ### Configure Lighttpd
-The configuration of the webserver is crucial to the thought behind one-time-access. First you will need to configure lighttpd such that only ciphers are supported that are not broken. So you may configure your `/etc/lighttpd/lighttpd.conf` so that 443 connections are encypted with the following settings. 
+The configuration of the webserver is crucial to the thought behind one-time-access. First you will need to configure lighttpd such that only ciphers are supported that are not broken. So you may configure your `/etc/lighttpd/lighttpd.conf` so that port 443 connections are encrypted with the following settings. 
 ```
 # Verschlüsselung hinzufügen
 $SERVER["socket"] == ":443" {
@@ -54,7 +54,9 @@ $HTTP["scheme"] == "https" {
   setenv.add-response-header  = ( "Strict-Transport-Security" => "max-age=63072000; includeSubdomains; preload", "X-Frame-Options" => "DENY" )
 }
 ```
-To detect that a file has been accessed via the webserver, it is necessary to activate access logging. Therefor I added the following to my `lighttpd.conf` file.
+It is worth to mention that the above cipher-list excludes a number of ciphers that are deprecated, but still in use. Windows XP users for example may not be able to connect to your webserver with the above settings.
+
+To detect that a file has been accessed via the webserver, it is necessary to activate access logging. Therefor I added the following lines to my `lighttpd.conf` file.
 ```
 # Logging
 server.modules += ( "mod_accesslog" )
@@ -228,7 +230,7 @@ Link(s) to file(s):
 https://mettenbr.ink/ota/c78a96a540869dfdb7d6e51617d962b/readme.md
 Link is valid until Thu Jul 20 21:44:09 UTC 2017
 ```
-Send the last line to a person of your choice since this is the online link to the file that can only be downloaded once.
+Send the second-to-last line to a person of your choice since this is the online link to the file that can only be downloaded once. The last line gives the associated expiration date (here this date is 14 days in the future).
 
 #### Create an alias at .bashrc
 To use the script from command line just add an alias to your `.bashrc`. Replace `~/github/one-time-access/ota-ssh-client.sh` according to your setup.
