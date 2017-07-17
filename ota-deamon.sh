@@ -405,8 +405,20 @@ add new files" >> $LOGFILE
 				thisFilePath="/$NAME_OF_FOLDER_SERVING_FILES/$thisFileFolder/$thisFileName"
 				# Note that a line in the access log is expected to look as the following
 				# 87.253.189.229 206 303793 490 304169 /ota/y9rhjf1nrzelyyafz0thiyri1qb6a0nh/bewerbung-data-scientist-tm.pdf [05/Jul/2017:11:36:08 +0000] "https://mettenbr.ink/ota/y9rhjf1nrzelyyafz0thiyri1qb6a0nh/bewerbung-data-scientist-tm.pdf" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36" 
-				numberOfAccesses=$(grep -c " $thisFilePath " $logFile)
-#				# Old method
+				# This line refers to the following lighttpd access format.
+				# accesslog.format = "%h %s %b %I %O %U %t \"%{Referer}i\" \"%{User-Agent}i\""
+				# Only successful requests should initiate a deletion of a file
+				# Here the second value, that is 206, is the status code that the
+				# server returns to the client. In case the server responds with
+				# the usual status code of success, this value is 200.
+				# You may find more about status codes under the following link.
+				# https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+				numberOfAccesses=$(awk -F ' ' '{print $2" "$6}' $logFile \
+					| egrep '^(200|201|205)\ ' | grep -c " $thisFilePath")
+				# lighttpd must be configured such that the status code %s is on the 
+				# second and the Request path %U is on the sixth position.
+#				# Old methods
+#				numberOfAccesses=$(grep -c " $thisFilePath " $logFile)
 #				numberOfAccesses=$(awk -F ' ' '{print $}' | grep -c "$(echo $fileEntry \
 #					| awk -F ' ' '{print $1}')" $logFile)
 				
