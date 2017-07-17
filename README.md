@@ -32,21 +32,20 @@ The following files are supposed to be on your _client machine_ and will be disc
 * ota-ssh-client.sh
 
 ### Configure Lighttpd
-The configuration of the webserver is crucial to the thought behind one-time-access. First you will need to configure lighttpd such that only ciphers are supported that are not broken. So you may configure your `/etc/lighttpd/lighttpd.conf` so that port 443 connections are encrypted with the following settings. 
+The configuration of the webserver is crucial to the thought behind one-time-access. First you will need to configure lighttpd such that only ciphers are supported that are not broken. So you may configure your `/etc/lighttpd/lighttpd.conf` so that you webserver only serves port 443 connections. So modify the server.port entry from ```server.port = 80``` to ```server.port = 443```.
+Then add the following settings at the end of the file to configure encryption.
 ```
 # Verschlüsselung hinzufügen
-$SERVER["socket"] == ":443" {
-  ssl.engine = "enable",
-  ssl.pemfile = "/etc/lighttpd/certs/lighttpd.pem",
-  # Weitere Einstellungen zur Absicherung:
-  #ssl.use-compression = "disable", #this is disabled at compile time since 1.4.28
-  ssl.use-sslv2 = "disable",
-  ssl.use-sslv3 = "disable",
-  ssl.cipher-list = "EECDH+AESGCM:EDH+AESGCM:AES128+EECDH:AES128+EDH",
-  ssl.dh-file = "/etc/lighttpd/certs/dhparam.pem",
-  ssl.ec-curve = "secp384r1",
-  ssl.ca-file = "/etc/lighttpd/certs/lets-encrypt-x3-cross-signed.pem",
-}
+ssl.engine = "enable",
+ssl.pemfile = "/etc/lighttpd/certs/lighttpd.pem",
+# Weitere Einstellungen zur Absicherung:
+#ssl.use-compression = "disable", #this is disabled at compile time since 1.4.28
+ssl.use-sslv2 = "disable",
+ssl.use-sslv3 = "disable",
+ssl.cipher-list = "EECDH+AESGCM:EDH+AESGCM:AES128+EECDH:AES128+EDH",
+ssl.dh-file = "/etc/lighttpd/certs/dhparam.pem",
+ssl.ec-curve = "secp384r1",
+ssl.ca-file = "/etc/lighttpd/certs/lets-encrypt-x3-cross-signed.pem",
 
 # HTTP_Strict_Transport_Security
 server.modules += ( "mod_setenv" )
@@ -70,7 +69,9 @@ accesslog.filename = "/var/log/lighttpd/access.log"
 # %t : timestamp of the end-time of the request
 accesslog.format = "%h %s %b %I %O %U %t \"%{Referer}i\" \"%{User-Agent}i\""
 ```
-Since accesses via port 80 are not encrypted, all requests to the one-time-access folder (here "ota") via port 80 should be redirected to port 443. This is done by the following code.
+In case you still want to serve port 80 connections, which is in contrast to the above configuration, you may add one of the following redirects.
+
+To redirect all requests via port 80 of the one-time-access folder (here "ota") to port 443. The following code may be added.
 ```
 # Redirect only traffic of one-time-access to https
 $SERVER["socket"] == ":80" {
