@@ -47,10 +47,10 @@ ssh $SSH_REMOTE_HOST su $OTAUSER -c \'/bin/dash $LOCK_SCRIPT create\'
 echo 'Copying file to server...'
 scp -Cp \"$1\" \"$SSH_REMOTE_HOST:$(dirname $PATH_TO_FILE_DIR_ON_SERVER)/$(basename $PATH_TO_FILE_DIR_ON_SERVER)\"
 # Remove move-lock file
-ssh $SSH_REMOTE_HOST su $OTAUSER -c \'/bin/dash $LOCK_SCRIPT remove\'
+ssh $SSH_REMOTE_HOST /bin/su - $OTAUSER -c \'/bin/dash $LOCK_SCRIPT remove\'
 # Obtain the link from the server
 #ssh -t -t $SSH_REMOTE_HOST /bin/dash $PRINT_LINK_SCRIPT $sha512SumOfFile
-ssh $SSH_REMOTE_HOST su $OTAUSER -c \'/bin/dash $PRINT_LINK_SCRIPT $sha512SumOfFile\'
+ssh $SSH_REMOTE_HOST /bin/su - $OTAUSER -c \'/bin/dash $PRINT_LINK_SCRIPT $sha512SumOfFile\'
 exit"
 
 exit 0
