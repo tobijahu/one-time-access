@@ -4,7 +4,7 @@
 # given SHA512 checksum of this ota-installation
 
 
-## Check for correct input
+## Check for correct input here.
 [ -z "$1" ] || [ $# -ne 1 ] \
 	&& echo "Usage: $0 <sha512sum of file>" \
 	&& exit 1
@@ -98,7 +98,7 @@ do
 		&& echo "Link is valid until "$(date -d @$(($(echo $fileInDatabase | awk -F ' ' '{print $4}') + $MAX_SECONDS_UNTIL_DELETION)))
 done
 
-# Check success of the process to obtain the links
+# Check success of the process to obtain the links.
 [ $? -ne 0 ] \
 	&& echo "Error: Could not print link to file." \
 	&& tail $PATH_TO_LOG_FILE \
